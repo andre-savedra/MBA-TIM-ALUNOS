@@ -70,6 +70,21 @@ msg.headers={Authorization:'Bearer '+token,Accept:'application/json'};delete msg
 return msg;
 ```
 
+3.1 - 
+```javascript
+msg.isSimulator=msg.headers?.['x-simulator']==='SENAI-MFM';
+msg.retryAfter=msg.headers?.['retry-after']||null;
+delete msg.headers;delete msg.responseHeaders;
+if(msg.statusCode===200){flow.set('p1_last_status','HTTP 200: '+msg.queryKind);return [msg,null];}
+if(msg.statusCode===401)flow.set('mfm_token',null);
+const action=({204:'Sem dispositivos nesta página; não há JSON a percorrer.',400:'Conferir parâmetros.',401:'Refazer login manualmente.',403:'Conferir permissão e identificador.',429:'Respeitar Retry-After; não repetir em loop.',500:'Serviço indisponível; preservar histórico.'})[msg.statusCode]||'Conferir resposta';
+flow.set('p1_last_status','HTTP '+msg.statusCode+' — '+action);
+msg.payload={status:msg.statusCode,action,retryAfter:msg.retryAfter};return [null,msg];
+```
+
+
+
+
 4 - 
 
 ```javascript
