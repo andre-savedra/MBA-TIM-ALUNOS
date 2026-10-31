@@ -1,0 +1,1014 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Exchange simulado • Laboratório SENAI",
+    "version": "1.1.0",
+    "description": "Dados sintéticos. Recorte de leitura da Aula 1 baseado no PDF Exchange v3.6.10, impresso em 31/10/2026. Não é Swagger oficial WEG e NÃO comprova compatibilidade total. As rotas abaixo são realmente implementadas no simulador. Consulte CONTRATO.md para diferenças. Endpoints comerciais fora desse recorte retornam 501 e não são oferecidos aqui como implementados. Uso: execute POST /exchange/auth; copie token; clique Authorize e cole somente o token, sem escrever Bearer. Todas as chamadas permanecem neste servidor local."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Somente o simulador local em que esta página está aberta"
+    }
+  ],
+  "tags": [
+    {
+      "name": "1. Autenticação"
+    },
+    {
+      "name": "2. Hierarquia"
+    },
+    {
+      "name": "3. Ativo"
+    },
+    {
+      "name": "4. Medições"
+    },
+    {
+      "name": "5. Somente simulador"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/exchange/auth": {
+      "post": {
+        "tags": [
+          "1. Autenticação"
+        ],
+        "summary": "Obter token fictício",
+        "description": "Credenciais do laboratório. Token válido por 24h; reinício/invalidação local também o revoga. PDF WEG pp. 7–8, 47. Copie somente o valor de token e cole em Authorize.",
+        "operationId": "post__exchange_auth",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/exchange/customers/sites": {
+      "get": {
+        "tags": [
+          "2. Hierarquia"
+        ],
+        "summary": "Listar unidades",
+        "description": "Campos conforme exemplo do PDF pp. 8–9; valores sintéticos.",
+        "operationId": "get__exchange_customers_sites",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Site"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, inválido, revogado ou expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/exchange/sites/{siteId}/plants": {
+      "get": {
+        "tags": [
+          "2. Hierarquia"
+        ],
+        "summary": "Listar plantas",
+        "description": "PDF pp. 9–10.",
+        "operationId": "get__exchange_sites_siteId_plants",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Plant"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, inválido, revogado ou expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "100000000000000000000001",
+              "pattern": "^[0-9a-f]{24}$"
+            }
+          }
+        ]
+      }
+    },
+    "/exchange/plants/{plantId}/devices": {
+      "get": {
+        "tags": [
+          "2. Hierarquia"
+        ],
+        "summary": "Listar ativos com paginação",
+        "description": "page começa em zero. Padrões do contrato: page=0 e perPage=500. Try it out sugere perPage=1 para exercitar duas páginas. 204 sem itens; máximo 500 é limite didático.",
+        "operationId": "get__exchange_plants_plantId_devices",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevicePage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, inválido, revogado ou expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Comportamento descrito no contrato do simulador"
+          },
+          "400": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "plantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "200000000000000000000001",
+              "pattern": "^[0-9a-f]{24}$"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 500
+            },
+            "example": 1
+          }
+        ]
+      }
+    },
+    "/exchange/devices/{deviceId}": {
+      "get": {
+        "tags": [
+          "3. Ativo"
+        ],
+        "summary": "Consultar ativo",
+        "description": "PDF pp. 11–12: subconjunto dos campos do dispositivo, não objeto completo de toda recipe WEG.",
+        "operationId": "get__exchange_devices_deviceId",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Device"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, inválido, revogado ou expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "300000000000000000000001",
+              "pattern": "^[0-9a-f]{24}$"
+            }
+          }
+        ]
+      }
+    },
+    "/exchange/devices/{deviceId}/sensors": {
+      "get": {
+        "tags": [
+          "3. Ativo"
+        ],
+        "summary": "Listar sensores — envelope didático",
+        "description": "Rota documentada p. 12; JSON completo não especificado no PDF. Este array é uma escolha do laboratório. Confirmar antes de migrar.",
+        "operationId": "get__exchange_devices_deviceId_sensors",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SensorDidatico"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, inválido, revogado ou expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "300000000000000000000001",
+              "pattern": "^[0-9a-f]{24}$"
+            }
+          }
+        ]
+      }
+    },
+    "/exchange/devices/{deviceId}/events": {
+      "get": {
+        "tags": [
+          "3. Ativo"
+        ],
+        "summary": "Listar eventos",
+        "description": "Campos do exemplo da p. 13; evento fictício fixo, não recalculado por cenário.",
+        "operationId": "get__exchange_devices_deviceId_events",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Event"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, inválido, revogado ou expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "300000000000000000000001",
+              "pattern": "^[0-9a-f]{24}$"
+            }
+          }
+        ]
+      }
+    },
+    "/exchange/sensors/{sensorId}/data": {
+      "get": {
+        "tags": [
+          "4. Medições"
+        ],
+        "summary": "Consultar série — envelope didático",
+        "description": "Rota e filtros: PDF pp. 19–20, 48. O PDF NÃO especifica o JSON completo de retorno. Este envelope é didático. Datas sintéticas fixas em 31/10/2026; fronteiras inclusivas locais. Nome/unidade dos atributos: pp. 37–42.",
+        "operationId": "get__exchange_sensors_sensorId_data",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeriesDidatica"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token ausente, inválido, revogado ou expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Segundos a aguardar no cenário local",
+                "schema": {
+                  "type": "string",
+                  "example": "60"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "sensorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "400000000000000000000001",
+              "pattern": "^[0-9a-f]{24}$"
+            }
+          },
+          {
+            "name": "initial_timestamp",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2026-10-31T12:00:00.000Z"
+          },
+          {
+            "name": "final_timestamp",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2026-10-31T14:00:00.000Z"
+          }
+        ]
+      }
+    },
+    "/__sim/status": {
+      "get": {
+        "tags": [
+          "5. Somente simulador"
+        ],
+        "summary": "Consultar cenário e período",
+        "description": "Não existe no Exchange WEG.",
+        "operationId": "get____sim_status",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/__sim/scenario": {
+      "post": {
+        "tags": [
+          "5. Somente simulador"
+        ],
+        "summary": "Mudar cenário",
+        "description": "Não existe no Exchange WEG. Altera o cenário da próxima consulta para todos os clientes locais; não publica dados automaticamente.",
+        "operationId": "post____sim_scenario",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Comportamento descrito no contrato do simulador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Scenario"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/__sim/expire-tokens": {
+      "post": {
+        "tags": [
+          "5. Somente simulador"
+        ],
+        "summary": "Invalidar tokens locais",
+        "description": "Não existe no Exchange WEG. Após executar, use novamente POST /auth e atualize Authorize.",
+        "operationId": "post____sim_expire_tokens",
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "example": "Unauthorized"
+              },
+              "type": {
+                "type": "string",
+                "example": "Unauthorized"
+              }
+            },
+            "required": [
+              "message",
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Credentials": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "aluno@simulador.local"
+          },
+          "password": {
+            "type": "string",
+            "example": "senai-aula1",
+            "format": "password"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ]
+      },
+      "Token": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "example": "JWT_FICTICIO_RETORNADO_PELO_LOGIN"
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "Site": {
+        "type": "object",
+        "properties": {
+          "siteId": {
+            "type": "string",
+            "example": "100000000000000000000001"
+          },
+          "name": {
+            "type": "string",
+            "example": "SENAI_DEMO"
+          },
+          "description": {
+            "type": "string",
+            "example": "Unidade fictícia"
+          }
+        },
+        "required": [
+          "siteId",
+          "name",
+          "description"
+        ]
+      },
+      "Plant": {
+        "type": "object",
+        "properties": {
+          "plantId": {
+            "type": "string",
+            "example": "200000000000000000000001"
+          },
+          "name": {
+            "type": "string",
+            "example": "Bancada_DEMO"
+          },
+          "description": {
+            "type": "string"
+          },
+          "geolocation": {
+            "type": "string",
+            "example": "-22.90,-47.06"
+          }
+        },
+        "required": [
+          "plantId",
+          "name",
+          "description",
+          "geolocation"
+        ]
+      },
+      "Device": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "example": "300000000000000000000001",
+            "pattern": "^[0-9a-f]{24}$"
+          },
+          "name": {
+            "type": "string",
+            "example": "Motor_01"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string",
+            "example": "200000000000000000000001"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "connectionInfo": {
+            "type": "object",
+            "properties": {
+              "connected": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "required": [
+          "deviceId",
+          "name",
+          "parentId"
+        ]
+      },
+      "DevicePage": {
+        "type": "object",
+        "properties": {
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Device"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "example": 0
+          },
+          "perPage": {
+            "type": "integer",
+            "example": 1
+          }
+        },
+        "required": [
+          "devices",
+          "page",
+          "perPage"
+        ]
+      },
+      "SensorDidatico": {
+        "type": "object",
+        "properties": {
+          "sensorId": {
+            "type": "string",
+            "example": "400000000000000000000001"
+          },
+          "deviceId": {
+            "type": "string",
+            "example": "300000000000000000000001",
+            "pattern": "^[0-9a-f]{24}$"
+          },
+          "name": {
+            "type": "string",
+            "example": "MotorScan_DEMO_01"
+          },
+          "attributes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "sensorId",
+          "deviceId",
+          "name",
+          "attributes"
+        ]
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "500000000000000000000001"
+          },
+          "deviceId": {
+            "type": "string",
+            "example": "300000000000000000000001",
+            "pattern": "^[0-9a-f]{24}$"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "creationDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUpdated": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updates": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "level": {
+            "type": "string",
+            "example": "warning"
+          },
+          "state": {
+            "type": "string",
+            "example": "new"
+          },
+          "deviceName": {
+            "type": "string",
+            "example": "Motor_01"
+          }
+        }
+      },
+      "SeriesDidatica": {
+        "type": "object",
+        "properties": {
+          "sensorId": {
+            "type": "string",
+            "example": "400000000000000000000001"
+          },
+          "deviceId": {
+            "type": "string",
+            "example": "300000000000000000000001",
+            "pattern": "^[0-9a-f]{24}$"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "example": "2026-10-31T12:00:00.000Z"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "surfaceTemperature": {
+                      "type": "number",
+                      "nullable": true,
+                      "example": 41
+                    },
+                    "velX": {
+                      "type": "number",
+                      "example": 2.2
+                    },
+                    "velY": {
+                      "type": "number",
+                      "example": 1.8
+                    },
+                    "velZ": {
+                      "type": "number",
+                      "example": 2.1
+                    },
+                    "speed": {
+                      "type": "number",
+                      "example": 1780
+                    }
+                  }
+                }
+              },
+              "required": [
+                "timestamp",
+                "data"
+              ]
+            }
+          }
+        },
+        "required": [
+          "sensorId",
+          "deviceId",
+          "data"
+        ]
+      },
+      "Scenario": {
+        "type": "object",
+        "properties": {
+          "scenario": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "aquecimento",
+              "lacuna",
+              "duplicado",
+              "vazio",
+              "atrasado",
+              "erro500",
+              "limite429"
+            ],
+            "example": "normal"
+          }
+        },
+        "required": [
+          "scenario"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "senai-mfm-aula1-aluno",
+  "version": "1.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.cjs",
+    "nodered": "node src/nodered.cjs",
+    "test": "node --test test/*.test.cjs"
+  },
+  "dependencies": {
+    "json-server": "0.17.4",
+    "node-red": "4.1.7",
+    "swagger-ui-dist": "5.34.1"
+  }
+}

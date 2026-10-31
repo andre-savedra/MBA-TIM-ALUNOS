@@ -1,0 +1,4 @@
+node_modules/
+.env
+node-red/userdir/*
+!node-red/userdir/.gitkeep
