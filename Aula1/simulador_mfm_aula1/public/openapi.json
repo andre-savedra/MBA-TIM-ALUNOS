@@ -663,6 +663,227 @@
         },
         "security": []
       }
+    },
+    "/__sim/sensors": {
+      "post": {
+        "tags": [
+          "5. Somente simulador"
+        ],
+        "operationId": "simCreateSensor",
+        "summary": "Cadastrar sensor de temperatura",
+        "description": "Escolha um deviceId existente. Copie o sensorId gerado na resposta 201 para o POST de medições.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deviceId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{24}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "deviceId",
+                  "name"
+                ]
+              },
+              "example": {
+                "deviceId": "300000000000000000000001",
+                "name": "Motor_01 – mancal traseiro"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro gravado em db.json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SensorDidatico"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Identificador de origem desconhecido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha de gravação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/__sim/measurements": {
+      "post": {
+        "tags": [
+          "5. Somente simulador"
+        ],
+        "operationId": "simCreateMeasurement",
+        "summary": "Inserir medição de um sensor",
+        "description": "Use o exemplo para um sensor existente ou cole o sensorId recém-criado. Em cenário normal, a próxima coleta lê os novos instantes. Para testar a deduplicação, envie duas vezes o mesmo timestamp explícito.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sensorId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{24}$"
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Opcional no envio. Sem este campo, o servidor usa o horário atual."
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "surfaceTemperature": {
+                        "type": "number",
+                        "description": "Temperatura de superfície em °C"
+                      }
+                    },
+                    "required": [
+                      "surfaceTemperature"
+                    ],
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "required": [
+                  "sensorId",
+                  "data"
+                ]
+              },
+              "example": {
+                "sensorId": "400000000000000000000001",
+                "data": {
+                  "surfaceTemperature": 47.8
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro gravado em db.json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sensorId": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{24}$"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Opcional no envio. Sem este campo, o servidor usa o horário atual."
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "surfaceTemperature": {
+                          "type": "number",
+                          "description": "Temperatura de superfície em °C"
+                        }
+                      },
+                      "required": [
+                        "surfaceTemperature"
+                      ],
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "required": [
+                    "sensorId",
+                    "timestamp",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Identificador de origem desconhecido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falha de gravação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Mesmo sensor e timestamp já cadastrados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

@@ -4,7 +4,7 @@ const SCENARIOS=['normal','aquecimento','lacuna','duplicado','vazio','atrasado',
 function createApp(options={}){
  const app=jsonServer.create();
  // JSON Server fornece HTTP, parser e banco. O CRUD genérico NÃO é publicado.
- const router=jsonServer.router(path.join(root,'db.json')),db=router.db;
+ const router=jsonServer.router(options.dbFile || path.join(root,'db.json')),db=router.db;
  const secret=crypto.randomBytes(32),tokens=new Set();let scenario='normal';
  const username=options.username||process.env.SIM_USERNAME||'aluno@simulador.local';
  const password=options.password||process.env.SIM_PASSWORD||'senai-aula1';
@@ -49,6 +49,41 @@ function createApp(options={}){
  app.get('/exchange/devices/:deviceId/sensors',(req,res)=>{if(!resource('devices','deviceId',req.params.deviceId,res))return;res.json(db.get('sensors').filter({deviceId:req.params.deviceId}).value().map(x=>strip(x,['id'])))});
  app.get('/exchange/devices/:deviceId/events',(req,res)=>{if(!resource('devices','deviceId',req.params.deviceId,res))return;res.json(db.get('events').filter({deviceId:req.params.deviceId}).value())});
  const iso=s=>typeof s==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?(?:Z|[+-]\d\d:\d\d)$/.test(s)&&Number.isFinite(Date.parse(s));
+ const temperature = 'surfaceTemperature';
+ function insert(collection, row, res) {
+  const rows = db.get(collection).value();
+  rows.push(row);
+  try {
+   db.write();
+  } catch {
+   rows.pop();
+   return err(res,500,'Falha ao gravar db.json','PersistenceError');
+  }
+  return res.status(201).json(strip(row,['id']));
+ }
+
+ app.post('/__sim/sensors',(req,res)=>{
+  const {deviceId,name} = req.body || {};
+  if (typeof name !== 'string' || !name.trim()) return err(res,400,'Informe o nome do sensor');
+  if (!resource('devices','deviceId',deviceId,res)) return;
+  const sensorId = crypto.randomBytes(12).toString('hex');
+  return insert('sensors',{id:sensorId,sensorId,deviceId,name:name.trim(),attributes:[temperature]},res);
+ });
+
+ app.post('/__sim/measurements',(req,res)=>{
+  const {sensorId,data,timestamp = new Date().toISOString()} = req.body || {};
+  const sensor = resource('sensors','sensorId',sensorId,res);
+  if (!sensor) return;
+  if (!iso(timestamp)) return err(res,400,'Use um timestamp ISO 8601 com fuso');
+  if (!Number.isFinite(data?.surfaceTemperature)) return err(res,400,'Informe data.surfaceTemperature em °C como número');
+  for (const [name,value] of Object.entries(data)) {
+   if (!sensor.attributes.includes(name) || !Number.isFinite(value)) return err(res,400,'Atributo inválido para o sensor: '+name);
+  }
+  const instant = Date.parse(timestamp);
+  const duplicate = db.get('measurements').some(row=>row.sensorId===sensorId && Date.parse(row.timestamp)===instant).value();
+  if (duplicate) return err(res,409,'Já existe uma medição para este sensor neste instante','Conflict');
+  return insert('measurements',{id:crypto.randomUUID(),sensorId,timestamp:new Date(instant).toISOString(),data},res);
+ });
  app.get('/exchange/sensors/:sensorId/data',(req,res)=>{
   const sensor=resource('sensors','sensorId',req.params.sensorId,res);if(!sensor)return;
   const start=req.query.initial_timestamp,end=req.query.final_timestamp;
@@ -57,6 +92,7 @@ function createApp(options={}){
   if(scenario==='erro500')return err(res,500,'Falha interna simulada');
   if(scenario==='limite429'){res.set('Retry-After','60');return err(res,429,'Limite didático de requisições')}
   let rows=structuredClone(db.get('measurements').filter({sensorId:sensor.sensorId}).value());
+  rows.sort((a,b)=>Date.parse(a.timestamp)-Date.parse(b.timestamp));
   if(scenario==='aquecimento')rows.forEach((r,i)=>r.data.surfaceTemperature=45+i*3);
   if(scenario==='lacuna'&&rows[4])rows[4].data.surfaceTemperature=null;
   if(scenario==='atrasado')rows=rows.slice(0,1);
