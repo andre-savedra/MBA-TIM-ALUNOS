@@ -153,3 +153,16 @@ return msg;
 ```
 
 
+
+9 -
+```javascript
+if (!msg.coleta) return msg;
+const p = msg.payload;
+const instante = Date.parse(p.measured_at);
+if (!Number.isFinite(instante) || !Number.isFinite(p.value)) return null;
+const ultimas = flow.get('ultimasMedicoes', 'disco') || {};
+if (instante <= Date.parse(ultimas[p.sensor_id])) return null;
+ultimas[p.sensor_id] = new Date(instante).toISOString();
+flow.set('ultimasMedicoes', ultimas, 'disco');
+return msg;
+```
