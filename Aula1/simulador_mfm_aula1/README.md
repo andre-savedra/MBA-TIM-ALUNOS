@@ -141,8 +141,15 @@ msg.payload={error:msg.error?.message||'Erro de transporte/execução'};delete m
 
 9 -
 ```javascript
-flow.set('p1_records', []);
-flow.set('p1_last_status', 'Sessão limpa; token preservado.');
-msg.payload = 'Sessão limpa';
+if (!msg.coleta) return msg;
+const p = msg.payload;
+const instante = Date.parse(p.measured_at);
+if (!Number.isFinite(instante) || !Number.isFinite(p.value)) return null;
+const ultimas = flow.get('ultimasMedicoes', 'disco') || {};
+if (instante <= Date.parse(ultimas[p.sensor_id])) return null;
+ultimas[p.sensor_id] = new Date(instante).toISOString();
+flow.set('ultimasMedicoes', ultimas, 'disco');
 return msg;
 ```
+
+
