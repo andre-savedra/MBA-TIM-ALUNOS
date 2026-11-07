@@ -146,3 +146,45 @@ flow.set('p1_last_status', 'Sessão limpa; token preservado.');
 msg.payload = 'Sessão limpa';
 return msg;
 ```
+
+
+
+----------------------
+
+
+```javascript
+if (msg.topic === 'pausar') {
+    flow.set('coleta_pausada', true);
+    node.status({fill:'grey', shape:'ring', text:'Automático pausado'});
+    return;
+}
+if (msg.topic === 'retomar') flow.set('coleta_pausada', false);
+if (msg.topic === 'timer' && (flow.get('coleta_pausada') ?? (env.get('MFM_AUTO') === 'false'))) return;
+if (context.get('ocupado') || Date.now() < (context.get('aguardar') || 0)) return;
+if (env.get('MFM_MODE') !== 'simulado') {
+    node.warn('Conferir o contrato do MFM real antes de iniciar a coleta');
+    return;
+}
+context.set('ocupado', true);
+node.status({fill:'blue', shape:'dot', text:'Consultando sensores'});
+let falhas = 0;
+try {
+    const total = await global.get('coletarSensores')({
+        base: env.get('MFM_BASE_URL').replace(/\/$/, ''),
+        username: env.get('MFM_USERNAME'), password: env.get('MFM_PASSWORD'),
+        getToken: () => flow.get('mfm_token'),
+        setToken: token => flow.set('mfm_token', token),
+        since: id => (flow.get('ultimasMedicoes', 'disco') || {})[id],
+        series: payload => node.send({payload, isSimulator:true, coleta:true}),
+        warn: aviso => { falhas++; node.warn(aviso); }
+    });
+    node.status({fill:falhas ? 'yellow' : 'green', shape:'dot', text:total + ' sensores · ' + falhas + ' falhas'});
+} catch (error) {
+    if (error.status === 429) context.set('aguardar', Date.now() + error.retryAfter * 1000);
+    node.status({fill:'red', shape:'ring', text:error.message});
+    node.warn(error.message);
+} finally {
+    context.set('ocupado', false);
+}
+
+```
