@@ -208,3 +208,135 @@ sudo systemctl status mosquitto --no-pager
 ```
 
 
+## M4. Instalar e configurar o broker
+
+Dentro do terminal **da VM Ubuntu**:
+
+```sh
+sudo apt update
+sudo apt install -y mosquitto mosquitto-clients
+sudo systemctl enable --now mosquitto
+sudo systemctl status mosquitto --no-pager
+```
+
+Criar usuário exclusivo do laboratório. O utilitário solicitará a senha duas vezes, sem colocá-la no comando:
+
+```sh
+sudo mosquitto_passwd -c /etc/mosquitto/passwd turma
+sudo chown root:mosquitto /etc/mosquitto/passwd
+sudo chmod 640 /etc/mosquitto/passwd
+```
+
+**`-c` somente na primeira criação:** ele sobrescreve o arquivo de senhas. Para acrescentar outro usuário, omitir `-c`.
+
+Abrir:
+
+```sh
+sudo nano /etc/mosquitto/conf.d/public.conf
+```
+
+Substituir o conteúdo desse arquivo pelo seguinte; se já seguiu o anexo, remover daqui `allow_anonymous true`. Não criar dois listeners na mesma porta em arquivos diferentes.
+
+```conf
+listener 1883 0.0.0.0
+protocol mqtt
+allow_anonymous false
+password_file /etc/mosquitto/passwd
+acl_file /etc/mosquitto/acl
+```
+
+Salvar com Ctrl+O, Enter, Ctrl+X. Criar a ACL:
+
+```sh
+sudo nano /etc/mosquitto/acl
+```
+
+Conteúdo:
+
+```conf
+user turma
+topic readwrite senai/tim2026/#
+```
+
+O usuário compartilhado permite ler/publicar em todos os tópicos da turma; separação por equipe é organização, não isolamento de segurança. Aplicar:
+
+```sh
+sudo chown root:mosquitto /etc/mosquitto/acl
+sudo chmod 640 /etc/mosquitto/acl
+sudo systemctl restart mosquitto
+sudo systemctl status mosquitto --no-pager
+sudo ss -ltnp | grep ':1883'
+sudo ufw status
+```
+
+Esperado: serviço active/running e listener `0.0.0.0:1883`. Se UFW estiver ativo, adicionar regra para a origem pública autorizada (substituir o exemplo) e preservar a regra administrativa SSH existente:
+
+```sh
+sudo ufw allow from IP_PUBLICO_SENAI to any port 1883 proto tcp
+```
+
+Não habilitar UFW às cegas em uma sessão remota. Se o serviço falhar:
+
+```sh
+sudo journalctl -u mosquitto -n 50 --no-pager
+```
+
+Verificar sintaxe, arquivos legíveis pelo usuário mosquitto e listener duplicado. Para revisar as configurações:
+
+```sh
+sudo grep -R -n -E 'listener|allow_anonymous|password_file|acl_file' /etc/mosquitto
+```
+
+## M5. Testar dentro da VM antes do Node-RED
+
+Abrir dois terminais na VM. Em cada um, obter a senha sem escrevê-la no histórico do shell:
+
+```sh
+read -s -p 'Senha MQTT do laboratório: ' MQTT_LAB_PASSWORD
+printf '\n'
+```
+
+Terminal A, manter assinando:
+
+```sh
+mosquitto_sub -h 127.0.0.1 -p 1883 -u turma -P "turma" -t 'senai/tim2026/#' -q 1 -v
+```
+
+Terminal B:
+
+```sh
+mosquitto_pub -h 127.0.0.1 -p 1883 -u turma -P "turma" -t 'senai/tim2026/teste' -q 1 -m '{"origem":"teste-local","value":35.5}'
+unset MQTT_LAB_PASSWORD
+```
+
+O terminal A deve exibir tópico e JSON. A senha é temporária: `-P` pode ficar visível nos argumentos do processo local; não usar conta de produção. Esse teste comprova listener e autenticação locais, **não** o caminho de rede notebook → Azure. Deixar A aberto para acompanhar a prova fim a fim.
+
+## M6. Montar o ramo no Node-RED com os alunos
+
+Pré-requisito: o fluxo principal já construído deve mostrar 12 medições aceitas no cenário normal. Não instalar nós extras: Function, MQTT out, Status e Debug são nativos.
+
+### Passo 1 — escolher a saída correta
+
+Localizar `Validar e deduplicar`. A **primeira saída**, já ligada ao Debug `Medição aceita`, fornece novas medições válidas. Manter esse fio e acrescentar outro para o novo ramo. A segunda saída é de rejeições/duplicatas e não será publicada.
+
+### Passo 2 — Function de publicação
+
+Arrastar Function, nomear `Preparar publicação MQTT`, uma saída. Colar exatamente:
+
+```javascript
+// Publicar somente o contrato interno; nunca headers ou token HTTP.
+const p=msg.payload;
+if(!p || p.quality!=="formato_valido" || p.mode!=="simulado" || p.origin!=="SIMULADOR_MFM" || !Number.isFinite(p.value)) {
+    node.warn("MQTT: medição fora do contrato didático"); return null;
+}
+const team=(env.get("MQTT_TEAM")||"professor").trim();
+if(!/^[a-zA-Z0-9_-]+$/.test(team)) { node.error("MQTT_TEAM: use letras, números, _ ou -"); return null; }
+const record={schema_version:"1.0",asset_id:p.asset_id,sensor_id:p.sensor_id,variable:p.variable,unit:p.unit,value:p.value,measured_at:p.measured_at,ingested_at:p.ingested_at,origin:p.origin,mode:p.mode,quality:p.quality};
+record.event_id=JSON.stringify([record.origin,record.asset_id,record.sensor_id,record.variable,record.measured_at]);
+return {topic:`senai/tim2026/${team}/medicoes`,payload:JSON.stringify(record),qos:1,retain:false};
+```
+
+A Function cria uma nova mensagem, contendo somente os campos permitidos; `msg.headers`, token e credenciais HTTP não seguem para o broker. Não encapsular o JSON em uma string dentro de `jsonValue`, como ocorria no exemplo Wokwi: aqui o próprio payload MQTT é o documento JSON.
+
+No `.env` local, acrescentar `MQTT_TEAM=equipe01` (cada equipe usa seu identificador, sem espaços ou barras). Reiniciar `npm run nodered`. Sem a variável, o padrão é `professor`. O tópico fica `senai/tim2026/equipe01/medicoes`.
+
