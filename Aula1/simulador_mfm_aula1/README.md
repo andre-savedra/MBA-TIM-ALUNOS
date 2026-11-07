@@ -188,3 +188,15 @@ try {
 }
 
 ```
+
+## MQTT
+
+
+```javascript
+mosquitto_sub -h 127.0.0.1 -p 1883 -u turma -P "turma" -t 'senai/tim2026/#' -q 1 -v
+```
+
+```javascript
+mosquitto_pub -h 127.0.0.1 -p 1883 -u turma -P "turma" -t 'senai/tim2026/teste' -q 1 -m '{"origem":"teste-local","value":35.5}'
+unset MQTT_LAB_PASSWORD
+```
