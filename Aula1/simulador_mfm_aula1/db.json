@@ -318,6 +318,30 @@
       "data": {
         "surfaceTemperature": 47.8
       }
+    },
+    {
+      "id": "85165355-e435-402c-ba57-5a524a3a9d9a",
+      "sensorId": "400000000000000000000001",
+      "timestamp": "2026-11-07T19:20:56.362Z",
+      "data": {
+        "surfaceTemperature": 47.7
+      }
+    },
+    {
+      "id": "2ed6907b-e250-4918-a22a-b768615a1817",
+      "sensorId": "400000000000000000000001",
+      "timestamp": "2026-11-07T19:24:52.002Z",
+      "data": {
+        "surfaceTemperature": 47.7
+      }
+    },
+    {
+      "id": "aecc5682-ec1e-460d-825d-4931e434cb64",
+      "sensorId": "400000000000000000000001",
+      "timestamp": "2026-11-07T19:26:10.771Z",
+      "data": {
+        "surfaceTemperature": 51.4
+      }
     }
   ],
   "events": [
