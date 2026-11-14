@@ -4,7 +4,7 @@
 
 - gemini
 
-
+- npx @deepseek-ai/dsh web
 
 .\instrutor
 sesisenaisp
