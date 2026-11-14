@@ -8,7 +8,8 @@
   "scripts": {
     "start": "node src/server.cjs",
     "nodered": "node src/nodered.cjs",
-    "test": "node --test test/*.test.cjs"
+    "test": "node --test test/*.test.cjs",
+    "mqtt:teste": "node src/testarmqtt.cjs"
   },
   "dependencies": {
     "json-server": "0.17.4",
