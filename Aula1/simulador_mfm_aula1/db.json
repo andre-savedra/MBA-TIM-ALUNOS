@@ -108,7 +108,7 @@
       "sensorId": "400000000000000000000001",
       "timestamp": "2026-10-31T12:00:00.000Z",
       "data": {
-        "surfaceTemperature": 41.0,
+        "surfaceTemperature": 41,
         "velX": 2.2,
         "velY": 1.8,
         "velZ": 2.1,
@@ -196,7 +196,7 @@
       "sensorId": "400000000000000000000001",
       "timestamp": "2026-10-31T13:40:00.000Z",
       "data": {
-        "surfaceTemperature": 44.0
+        "surfaceTemperature": 44
       }
     },
     {
@@ -212,7 +212,7 @@
       "sensorId": "400000000000000000000002",
       "timestamp": "2026-10-31T12:00:00.000Z",
       "data": {
-        "surfaceTemperature": 42.0,
+        "surfaceTemperature": 42,
         "velX": 2.4,
         "velY": 1.8,
         "velZ": 2.1,
@@ -300,7 +300,7 @@
       "sensorId": "400000000000000000000002",
       "timestamp": "2026-10-31T13:40:00.000Z",
       "data": {
-        "surfaceTemperature": 45.0
+        "surfaceTemperature": 45
       }
     },
     {
@@ -309,6 +309,38 @@
       "timestamp": "2026-10-31T13:50:00.000Z",
       "data": {
         "surfaceTemperature": 45.3
+      }
+    },
+    {
+      "id": "a06188d7-6d5a-4213-b551-32ac8ef48c73",
+      "sensorId": "400000000000000000000001",
+      "timestamp": "2026-11-07T16:05:08.658Z",
+      "data": {
+        "surfaceTemperature": 47.8
+      }
+    },
+    {
+      "id": "85165355-e435-402c-ba57-5a524a3a9d9a",
+      "sensorId": "400000000000000000000001",
+      "timestamp": "2026-11-07T19:20:56.362Z",
+      "data": {
+        "surfaceTemperature": 47.7
+      }
+    },
+    {
+      "id": "2ed6907b-e250-4918-a22a-b768615a1817",
+      "sensorId": "400000000000000000000001",
+      "timestamp": "2026-11-07T19:24:52.002Z",
+      "data": {
+        "surfaceTemperature": 47.7
+      }
+    },
+    {
+      "id": "aecc5682-ec1e-460d-825d-4931e434cb64",
+      "sensorId": "400000000000000000000001",
+      "timestamp": "2026-11-07T19:26:10.771Z",
+      "data": {
+        "surfaceTemperature": 51.4
       }
     }
   ],
