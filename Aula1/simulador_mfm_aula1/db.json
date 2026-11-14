@@ -342,6 +342,14 @@
       "data": {
         "surfaceTemperature": 51.4
       }
+    },
+    {
+      "id": "243a4f3f-65a6-4a57-81f8-a79da0f9d460",
+      "sensorId": "400000000000000000000001",
+      "timestamp": "2026-11-14T13:16:40.538Z",
+      "data": {
+        "surfaceTemperature": 55
+      }
     }
   ],
   "events": [
