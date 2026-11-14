@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>TIM_2026 — Monitor MQTT (WebSocket porta 80)</title>
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<style>
+  :root { --borda:#d8dde3; --tinta:#1b2733; --fraco:#5b6b7a; --ok:#0f7b4f; --erro:#b42318; --fundo:#f6f8fa; }
+  * { box-sizing:border-box; }
+  body { font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; color:var(--tinta); margin:0; padding:24px; background:var(--fundo); }
+  h1 { font-size:20px; margin:0 0 4px; }
+  p.sub { color:var(--fraco); margin:0 0 20px; }
+  fieldset { border:1px solid var(--borda); border-radius:10px; background:#fff; padding:16px; margin:0 0 16px; }
+  legend { font-weight:600; padding:0 6px; }
+  .grade { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+  label { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--fraco); margin-bottom:4px; }
+  input { width:100%; padding:8px 10px; border:1px solid var(--borda); border-radius:6px; font:inherit; }
+  button { font:inherit; font-weight:600; padding:10px 18px; border-radius:6px; border:1px solid var(--tinta); background:var(--tinta); color:#fff; cursor:pointer; }
+  button.sec { background:#fff; color:var(--tinta); }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .barra { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px; }
+  #estado { font-weight:600; }
+  .contadores { display:flex; gap:24px; margin:0 0 12px; }
+  .contadores div { background:#fff; border:1px solid var(--borda); border-radius:10px; padding:10px 16px; min-width:120px; }
+  .contadores b { display:block; font-size:24px; }
+  .contadores span { font-size:12px; color:var(--fraco); text-transform:uppercase; }
+  table { width:100%; border-collapse:collapse; background:#fff; font-size:13px; }
+  th,td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--borda); white-space:nowrap; }
+  th { background:#eef2f6; position:sticky; top:0; }
+  .rolagem { max-height:420px; overflow:auto; border:1px solid var(--borda); border-radius:10px; }
+  .dup { color:var(--erro); font-weight:600; }
+  code { background:#eef2f6; padding:1px 5px; border-radius:4px; }
+  .aviso { font-size:13px; color:var(--fraco); margin-top:10px; }
+</style>
+</head>
+<body>
+<h1>Monitor MQTT — TIM_2026</h1>
+<p class="sub">Assina o broker da Azure por <b>WebSocket na porta 80</b>, o mesmo caminho que o Node-RED usa. Se as mensagens aparecem aqui, a rede da escola permitiu o trajeto completo.</p>
+
+<fieldset>
+  <legend>Conexão</legend>
+  <div class="grade">
+    <div><label for="url">Servidor (URL_WEBSOCKET_NODE_RED)</label><input id="url" placeholder="ws://mqtt-lab-xxxx.brazilsouth.cloudapp.azure.com:80/mqtt"></div>
+    <div><label for="usuario">Usuário MQTT</label><input id="usuario" value="turma"></div>
+    <div><label for="senha">Senha MQTT</label><input id="senha" type="password" placeholder="do arquivo credenciais-equipeNN.txt"></div>
+    <div><label for="topico">Tópico assinado</label><input id="topico" value="senai/tim2026/#"></div>
+  </div>
+  <div class="barra">
+    <button id="conectar">Conectar</button>
+    <button id="desconectar" class="sec" disabled>Desconectar</button>
+    <button id="limpar" class="sec">Limpar tabela</button>
+    <span id="estado">desconectado</span>
+  </div>
+  <p class="aviso">Abra este arquivo direto do disco (duplo clique). Os dados ficam só no navegador; nada é salvo.</p>
+</fieldset>
+
+<div class="contadores">
+  <div><b id="cDistintos">0</b><span>eventos distintos</span></div>
+  <div><b id="cTotal">0</b><span>mensagens recebidas</span></div>
+  <div><b id="cDup">0</b><span>repetições (QoS 1)</span></div>
+</div>
+
+<div class="rolagem">
+<table>
+  <thead><tr><th>#</th><th>recebido</th><th>tópico</th><th>variável</th><th>valor</th><th>unidade</th><th>measured_at</th><th>sensor_id</th><th>qualidade</th></tr></thead>
+  <tbody id="corpo"></tbody>
+</table>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  let cliente = null, total = 0, dup = 0;
+  const vistos = new Set();
+
+  const estado = (txt, cor) => { $('estado').textContent = txt; $('estado').style.color = cor || '#5b6b7a'; };
+
+  $('conectar').onclick = function () {
+    const url = $('url').value.trim();
+    if (!url) { alert('Informe a URL do broker (campo URL_WEBSOCKET_NODE_RED do arquivo de credenciais).'); return; }
+    estado('conectando...', '#5b6b7a');
+    $('conectar').disabled = true;
+    cliente = mqtt.connect(url, {
+      username: $('usuario').value.trim(),
+      password: $('senha').value,
+      protocolVersion: 4,
+      clean: true,
+      reconnectPeriod: 4000,
+      connectTimeout: 10000
+    });
+    cliente.on('connect', function () {
+      estado('conectado', '#0f7b4f');
+      $('desconectar').disabled = false;
+      cliente.subscribe($('topico').value.trim(), { qos: 1 });
+    });
+    cliente.on('reconnect', () => estado('reconectando...', '#5b6b7a'));
+    cliente.on('close', () => estado('desconectado', '#5b6b7a'));
+    cliente.on('error', function (e) {
+      estado('erro: ' + (e && e.message ? e.message : e), '#b42318');
+      $('conectar').disabled = false;
+    });
+    cliente.on('message', function (topico, bruto) {
+      total++;
+      let m = {};
+      const texto = bruto.toString();
+      try { m = JSON.parse(texto); } catch (_) { m = { variable: '(texto)', value: texto }; }
+      const chave = m.event_id || (topico + '|' + texto);
+      const repetida = vistos.has(chave);
+      if (repetida) { dup++; } else { vistos.add(chave); }
+      const tr = document.createElement('tr');
+      const cel = v => { const td = document.createElement('td'); td.textContent = (v === undefined || v === null) ? '—' : String(v); return td; };
+      tr.appendChild(cel(total));
+      tr.appendChild(cel(new Date().toLocaleTimeString('pt-BR')));
+      tr.appendChild(cel(topico));
+      tr.appendChild(cel(m.variable));
+      tr.appendChild(cel(m.value));
+      tr.appendChild(cel(m.unit));
+      tr.appendChild(cel(m.measured_at));
+      tr.appendChild(cel(m.sensor_id));
+      const q = cel(repetida ? 'repetida' : (m.quality || '—'));
+      if (repetida) { q.className = 'dup'; }
+      tr.appendChild(q);
+      $('corpo').prepend(tr);
+      $('cTotal').textContent = total;
+      $('cDup').textContent = dup;
+      $('cDistintos').textContent = vistos.size;
+    });
+  };
+
+  $('desconectar').onclick = function () {
+    if (cliente) { cliente.end(true); }
+    $('desconectar').disabled = true;
+    $('conectar').disabled = false;
+    estado('desconectado');
+  };
+
+  $('limpar').onclick = function () {
+    $('corpo').innerHTML = '';
+    total = 0; dup = 0; vistos.clear();
+    $('cTotal').textContent = '0'; $('cDup').textContent = '0'; $('cDistintos').textContent = '0';
+  };
+})();
+</script>
+</body>
+</html>
